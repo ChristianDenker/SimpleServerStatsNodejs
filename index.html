@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Simple Server Stats</title>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript">
+	google.load("visualization", "1", {
+		packages : [ "corechart" ]
+	});
+	google.setOnLoadCallback(drawChart);
+
+	var ramDataTable;
+	var ramChart;
+	var options;
+
+	function drawChart() {
+		ramDataTable = new google.visualization.DataTable();
+		ramDataTable.addColumn('string', 'time');
+		ramDataTable.addColumn('number', 'value');
+
+		options = {
+			title : 'RAM free'
+		};
+
+		ramChart = new google.visualization.LineChart(document
+				.getElementById('chart_div'));
+
+	}
+	function addRamToChart(memuse) {
+		var newData = [ [ memuse.time, memuse.freemem / 1024 ] ];
+		ramDataTable.addRow(newData[0]);
+
+		ramChart.draw(ramDataTable, {
+			title : 'RAM free (Total: ' + memuse.totalmem / 1024 + ')'
+		});
+
+	}
+</script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+	function updateStats(memuse) {
+		document.getElementById('hostname').innerHTML = memuse.hostname;
+		document.getElementById('uptime').innerHTML = memuse.uptime / 60 / 60;
+		document.getElementById('loadaverage').innerHTML = memuse.loadaverage;
+
+		addRamToChart(memuse);
+	}
+
+	var socket = io.connect('/');
+
+	socket.on('update', function(data) {
+		console.log(data);
+		updateStats(data);
+	});
+</script>
+</head>
+<body>
+	<strong>Server Stats</strong>
+	<br> Hostname:
+	<div id='hostname'></div>
+	<br> Uptime (hours):
+	<div id='uptime'></div>
+	<br> Load average (1, 5 and 15 minutes):
+	<div id='loadaverage'></div>
+
+	<div id="chart_div" style="width: 900px; height: 250px;"></div>
+</body>
+</html>
